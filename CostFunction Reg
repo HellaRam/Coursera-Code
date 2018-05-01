@@ -1,0 +1,22 @@
+function [J, grad] = costFunctionReg(theta, X, y, lambda)
+%COSTFUNCTION Compute cost and gradient for logistic regression
+%   J = COSTFUNCTION(theta, X, y) computes the cost of using theta as the
+%   parameter for logistic regression and the gradient of the cost
+%   w.r.t. to the parameters.
+
+m = length(y); % number of training examples
+
+z= X* theta;
+h = (1./(1+ (exp(-z))));
+up = log(h);
+down = (log(1-h));
+uperror= (((-y)')*up); 
+downerror= (((1-y)')*down);
+unreg= ((uperror- downerror)/ m);
+reg = (((sum(theta(2:length(theta),:).^2))/(2*m))* lambda);
+J = unreg+ reg; 
+error=(h-y);
+change = (X' * error);
+grad = (change/m);
+
+end
