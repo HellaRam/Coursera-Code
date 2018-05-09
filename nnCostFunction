@@ -1,0 +1,96 @@
+function [J grad] = nnCostFunction(nn_params, ...
+                                   input_layer_size, ...
+                                   hidden_layer_size, ...
+                                   num_labels, ...
+                                   X, y, lambda)
+%NNCOSTFUNCTION Implements the neural network cost function for a two layer
+%neural network which performs classification
+%   [J grad] = NNCOSTFUNCTON(nn_params, hidden_layer_size, num_labels, ...
+%   X, y, lambda) computes the cost and gradient of the neural network. The
+%   parameters for the neural network are "unrolled" into the vector
+%   nn_params and need to be converted back into the weight matrices. 
+% 
+%   The returned parameter grad should be a "unrolled" vector of the
+%   partial derivatives of the neural network.
+%
+
+% Reshape nn_params back into the parameters Theta1 and Theta2, the weight matrices
+% for our 2 layer neural network
+Theta1 = reshape(nn_params(1:hidden_layer_size * (input_layer_size + 1)), ...
+                 hidden_layer_size, (input_layer_size + 1));
+
+Theta2 = reshape(nn_params((1 + (hidden_layer_size * (input_layer_size + 1))):end), ...
+                 num_labels, (hidden_layer_size + 1));
+
+% Setup some useful variables
+m = size(X, 1);
+         
+% You need to return the following variables correctly 
+J = 0;
+Theta1_grad = zeros(size(Theta1));
+Theta2_grad = zeros(size(Theta2));
+
+%% Cost Function
+Tyvec = (y==(1:num_labels))';
+z2 = zeros(hidden_layer_size,m);
+Xones =[ones(m,1) X];
+TXones = Xones';
+    for i =1:m
+        for j = 1:hidden_layer_size
+    z2(j,i)= z2(j,i) + Theta1(j,:) * TXones(:,i);
+        end
+    end
+a2 = sigmoid(z2);
+a2ones = [ones(1,m); a2];
+z3 = zeros(num_labels,m);
+    for i = 1:m
+        for j = 1:num_labels
+    z3(j,i) =z3(j,i)+ Theta2(j,:)* a2ones(:,i);
+        end
+    end
+a3=sigmoid(z3);
+J= sum(sum(((-1 .* Tyvec) .* log(a3))-((1-Tyvec).*log(1-a3))))/m;
+
+%% Regularization Section
+expTheta1 = Theta1 .^2;
+sumTheta1= sum(expTheta1(:,2:end),2);
+regTheta1=sum(sumTheta1);
+
+expTheta2 = Theta2 .^2;
+sumTheta2= sum(expTheta2(:,2:end),2);
+regTheta2=sum(sumTheta2);
+regThetas= regTheta1+regTheta2;
+reg = ((regThetas* lambda)/(2*m));
+J= J +reg;
+%% Backpropagation
+Tyvec = (y==(1:num_labels))';
+z2 = zeros(hidden_layer_size,m);
+Xones =[ones(m,1) X];
+TXones = Xones';
+for t=1:m
+    a1=TXones(:,t);
+    z2= Theta1 * a1;
+    a2= sigmoid(z2);
+    a2= [1;a2];
+    z3= Theta2* a2;
+    a3=sigmoid(z3);
+    d3= a3-Tyvec(:,t);
+    TTheta2=Theta2';
+    sgz2= sigmoid(z2) .* (1-(sigmoid(z2)));
+    d2=(TTheta2(2:end,:) * d3).*sgz2;
+    D1=d2*a1';
+    D2=d3*a2';
+    Theta1_grad=Theta1_grad + D1/m;
+    Theta2_grad=Theta2_grad + D2/m;
+end
+%% Regularization after backpropagation
+regTheta1= Theta1;
+regTheta1(:,1)=0;
+regTheta2= Theta2;
+regTheta2(:,1)=0;
+Theta1_grad= Theta1_grad+ (regTheta1*(lambda/m));
+Theta2_grad= Theta2_grad+ (regTheta2*(lambda/m));
+
+%% Unroll stuff
+grad = [Theta1_grad(:) ; Theta2_grad(:)];
+end
